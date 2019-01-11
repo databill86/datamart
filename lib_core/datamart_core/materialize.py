@@ -22,7 +22,7 @@ PROM_DOWNLOAD = prometheus_client.Histogram(
 
 
 @contextlib.contextmanager
-def get_dataset(metadata, dataset_id, format='csv'):
+def get_dataset(metadata, dataset_id, proxy=None, format='csv'):
     shared = os.path.join('/datasets', encode_dataset_id(dataset_id))
     if os.path.exists(shared) and format == 'csv':
         # Read directly from stored file

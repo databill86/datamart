@@ -12,6 +12,7 @@ import prometheus_client
 from prometheus_async.aio import time as prom_async_time
 import shutil
 import tempfile
+from tornado.httpclient import AsyncHTTPClient
 import tornado.ioloop
 from tornado.routing import URLSpec
 import tornado.httputil
@@ -75,6 +76,28 @@ class BaseHandler(RequestHandler):
             raise ValueError("Can't encode %r to JSON" % type(obj))
         self.set_header('Content-Type', 'application/json; charset=utf-8')
         return self.finish(json.dumps(obj))
+
+    http_client = AsyncHTTPClient(defaults=dict(user_agent="DataMart"))
+
+    async def forward_upstream(self):
+        url = self.application.upstream + self.request.path
+        if self.request.query:
+            url = url + '?' + self.request.query
+        headers = {}
+        for name in ('Accept', 'Content-Type'):
+            if name in self.request.headers:
+                headers[name] = self.request.headers[name]
+        response = await self.http_client.fetch(
+            url,
+            method=self.request.method,
+            headers=headers,
+            body=self.request.body if self.request.body else None,
+        )
+        self.set_status(response.code)
+        for name in ('Content-Type', 'Content-Disposition'):
+            if name in response.headers:
+                self.set_header(name, response.headers[name])
+        return self.finish(response.body)
 
 
 class CorsHandler(BaseHandler):
@@ -456,6 +479,9 @@ class Query(QueryHandler):
     async def post(self):
         PROM_SEARCH.inc()
         self._cors()
+        if self.application.upstream:
+            # TODO: If data is attached, profile it here
+            return self.forward_upstream()
 
         args, files = self.get_form_data()
 
@@ -624,11 +650,21 @@ class Download(CorsHandler):
         output_format = self.get_query_argument('format', 'csv')
 
         # Get materialization data from Elasticsearch
-        es = self.application.elasticsearch
-        try:
-            metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
-        except elasticsearch.NotFoundError:
-            raise HTTPError(404)
+        if self.application.upstream:
+            response = await self.http_client.fetch(
+                self.application.upstream + '/metadata/' +
+                dataset_id + '?format=' + output_format,
+                headers={'Accept': 'application/json'},
+            )
+            if response.code == 404:
+                raise HTTPError(404)
+            metadata = json.loads(response.body.decode('utf-8'))
+        else:
+            es = self.application.elasticsearch
+            try:
+                metadata = es.get('datamart', '_doc', id=dataset_id)['_source']
+            except elasticsearch.NotFoundError:
+                raise HTTPError(404)
         materialize = metadata.get('materialize', {})
 
         # If there's a direct download URL
@@ -636,7 +672,9 @@ class Download(CorsHandler):
             # Redirect the client to it
             self.redirect(materialize['direct_url'])
         else:
-            getter = get_dataset(metadata, dataset_id, format=output_format)
+            getter = get_dataset(metadata, dataset_id,
+                                 self.application.upstream,
+                                 format=output_format)
             try:
                 dataset_path = getter.__enter__()
             except Exception:
@@ -672,6 +710,9 @@ class Download(CorsHandler):
 class Metadata(CorsHandler):
     @PROM_METADATA_TIME.time()
     def get(self, dataset_id):
+        if self.application.upstream:
+            return self.forward_upstream()
+
         PROM_METADATA.inc()
 
         es = self.application.elasticsearch
@@ -688,6 +729,8 @@ class Augment(QueryHandler):
     async def post(self):
         PROM_AUGMENT.inc()
         self._cors()
+
+        # TODO: Handle upstream mode
 
         args, files = self.get_form_data()
 
@@ -776,15 +819,18 @@ class Augment(QueryHandler):
 
 
 class Application(tornado.web.Application):
-    def __init__(self, *args, es, **kwargs):
+    def __init__(self, *args, es=None, upstream=None, **kwargs):
         super(Application, self).__init__(*args, **kwargs)
 
         self.work_tickets = asyncio.Semaphore(MAX_CONCURRENT)
 
         self.elasticsearch = es
+        self.upstream = upstream
         self.channel = None
 
-        log_future(asyncio.get_event_loop().create_task(self._amqp()), logger)
+        if not self.upstream:
+            log_future(asyncio.get_event_loop().create_task(self._amqp()),
+                       logger)
 
     async def _amqp(self):
         connection = await aio_pika.connect_robust(
@@ -797,9 +843,18 @@ class Application(tornado.web.Application):
 
 
 def make_app(debug=False):
-    es = elasticsearch.Elasticsearch(
-        os.environ['ELASTICSEARCH_HOSTS'].split(',')
-    )
+    kwargs = {}
+    if len({'DATAMART_UPSTREAM', 'ELASTICSEARCH_HOSTS'}
+           .intersection(os.environ)) != 1:
+        raise EnvironmentError("Please set either DATAMART_UPSTREAM or "
+                               "ELASTICSEARCH_HOSTS")
+    elif 'DATAMART_UPSTREAM' in os.environ:
+        logger.warning("datamart-query container working in relay mode")
+        kwargs['upstream'] = os.environ['DATAMART_UPSTREAM']
+    else:
+        kwargs['es'] = elasticsearch.Elasticsearch(
+            os.environ['ELASTICSEARCH_HOSTS'].split(',')
+        )
 
     return Application(
         [
@@ -810,7 +865,7 @@ def make_app(debug=False):
         ],
         debug=debug,
         serve_traceback=True,
-        es=es,
+        **kwargs
     )
 
 
