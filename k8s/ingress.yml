@@ -1,0 +1,39 @@
+##########
+# Ingress controller
+##########
+
+---
+kind: Ingress
+apiVersion: extensions/v1beta1
+metadata:
+  name: coordinator-in
+spec:
+  backend:
+    serviceName: coordinator
+    servicePort: 8001
+---
+kind: Ingress
+apiVersion: extensions/v1beta1
+metadata:
+  name: query-in
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /search
+        backend:
+          serviceName: query
+          servicePort: 8002
+---
+kind: Ingress
+apiVersion: extensions/v1beta1
+metadata:
+  name: rabbitmq-in
+spec:
+  rules:
+  - host: rabbitmq
+    http:
+      paths:
+      - backend:
+          serviceName: rabbitmq
+          servicePort: 1111

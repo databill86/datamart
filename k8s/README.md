@@ -7,7 +7,7 @@ minikube start --memory 4096
 
 Set up services:
 ```
-kubectl apply -f services.yml
+kubectl apply -f services-nodeport.yml
 ```
 
 Set up the configuration:
