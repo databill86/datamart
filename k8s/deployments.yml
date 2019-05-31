@@ -304,6 +304,12 @@ spec:
       - name: query-cache
         persistentVolumeClaim:
           claimName: query-cache-pvc
+      readinessProbe:
+        httpGet:
+          path: /health
+          port: 8002
+        periodSeconds: 1
+        failureThreshold: 2
       terminationGracePeriodSeconds: 300
 ---
 apiVersion: extensions/v1beta1
