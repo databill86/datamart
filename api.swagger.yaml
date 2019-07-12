@@ -87,9 +87,47 @@ paths:
             encoding:
               query:
                 contentType: application/json
+            examples:
+              keyword_search:
+                summary: "Search using the keywords 'taxi' and 'medallion'"
+                value:
+                  query:
+                    keywords:
+                      - "taxi"
+                      - "medallion"
+                    variables: []
+              geo_bronx:
+                summary: "Search for geospatial datasets concerning the Bronx"
+                value:
+                  query:
+                    keywords: []
+                    variables:
+                    - type: geospatial_variable
+                      latitude1: 40.894673917657514
+                      latitude2: 40.823526516469315
+                      longitude1: -73.91395568847656
+                      longitude2: -73.82675170898438
           application/json:
             schema:
               $ref: "#/components/schemas/Query"
+            examples:
+              keyword_search:
+                summary: "Search using the keywords 'taxi' and 'medallion'"
+                value:
+                  keywords:
+                    - "taxi"
+                    - "medallion"
+                  variables: []
+              geo_bronx:
+                summary: "Search for geospatial datasets concerning the Bronx"
+                value:
+                  keywords: []
+                  variables:
+                  - type: geospatial_variable
+                    latitude1: 40.894673917657514
+                    latitude2: 40.823526516469315
+                    longitude1: -73.91395568847656
+                    longitude2: -73.82675170898438
       responses:
         200:
           description: OK
@@ -115,6 +153,9 @@ paths:
         schema:
           type: string
         required: true
+        examples:
+          nyc_data:
+            value: "datamart.socrata.data-cityofnewyork-us.395v-hkhg"
       responses:
         404:
           description: "No dataset with this ID"
@@ -141,12 +182,47 @@ paths:
                   $ref: "#/components/schemas/Result"
               required:
               - task
+            examples:
+              nyc_data:
+                summary: "Sample search result sent back as task"
+                value:
+                  task:
+                    id: "datamart.socrata.data-cityofnewyork-us.vbgf-ket3"
+                    metadata:
+                      columns:
+                        - name: "Borough"
+                        - name: "Calendar Year"
+                        - name: "Filed Violation Count"
+                      materialize:
+                        socrata_id: "vbgf-ket3"
+                        socrata_domain: "data.cityofnewyork.us"
+                        socrata_updated: "2019-04-29T16:54:13.000Z"
+                        direct_url: "https://data.cityofnewyork.us/api/views/vbgf-ket3/rows.csv?accessType=DOWNLOAD"
+                        identifier: datamart.socrata
+                        date: "2019-06-27T19:26:53.147559Z"
             encoding:
               task:
                 contentType: application/json
           application/json:
             schema:
               $ref: "#/components/schemas/Result"
+            examples:
+              nyc_data:
+                summary: "Sample search result sent back as task"
+                value:
+                  id: "datamart.socrata.data-cityofnewyork-us.vbgf-ket3"
+                  metadata:
+                    columns:
+                      - name: "Borough"
+                      - name: "Calendar Year"
+                      - name: "Filed Violation Count"
+                    materialize:
+                      socrata_id: "vbgf-ket3"
+                      socrata_domain: "data.cityofnewyork.us"
+                      socrata_updated: "2019-04-29T16:54:13.000Z"
+                      direct_url: "https://data.cityofnewyork.us/api/views/vbgf-ket3/rows.csv?accessType=DOWNLOAD"
+                      identifier: datamart.socrata
+                      date: "2019-06-27T19:26:53.147559Z"
       responses:
         404:
           description: "No dataset for this result"
