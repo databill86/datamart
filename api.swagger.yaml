@@ -1,0 +1,201 @@
+openapi: 3.0.1
+info:
+  title: "NYU Datamart"
+  description: "NYU's Datamart server."
+  contact:
+    email: "remi.rampin@nyu.edu"
+  license:
+    name: "BSD-3-Clause"
+    url: "https://gitlab.com/ViDA-NYU/datamart/datamart/blob/master/LICENSE.txt"
+  version: "0.3"
+externalDocs:
+  description: "Find out more about Datamart"
+  url: "http://gitlab.com/ViDA-NYU/datamart/datamart"
+servers:
+- url: "https://auctus.vida-nyu.org/"
+tags:
+- name: "query"
+  description: "Searching the index for datasets"
+- name: "augment"
+  description: "Using the Datamart to perform server-side augmentation"
+- name: "ingest"
+  description: "Adding new datasets to the index"
+paths:
+  /upload:
+    post:
+      tags:
+      - "ingest"
+      summary: "Add a new dataset to the index"
+      operationId: "upload"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              oneOf:
+                - properties:
+                    name:
+                      type: string
+                      description: "Dataset name"
+                    description:
+                      type: string
+                    address:
+                      type: string
+                  required:
+                  - name
+                  - address
+                - properties:
+                    name:
+                      type: string
+                      description: "Dataset name"
+                    description:
+                      type: string
+                    file:
+                      type: string
+                      format: binary
+                  required:
+                  - name
+                  - file
+        required: true
+      responses:
+        302:
+          description: "OK, redirects to /"
+          content: {}
+        400:
+          description: "Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /search:
+    post:
+      tags:
+      - "query"
+      summary: "Search the index for datasets"
+      operationId: "search"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                data:
+                  type: string
+                  description: "Data which you want to augment"
+                  format: binary
+                query:
+                  $ref: "#/components/schemas/Query"
+              # TODO: One of the two needs to be provided
+            encoding:
+              query:
+                contentType: application/json
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Query"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Results"
+        400:
+          description: "Invalid query"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /download/{dataset_id}:
+    get:
+      tags:
+      - "query"
+      summary: "Download a full dataset by its ID"
+      operationId: "download_id"
+      parameters:
+      - in: path
+        name: "dataset_id"
+        schema:
+          type: string
+        required: true
+      responses:
+        404:
+          description: "No dataset with this ID"
+        200:
+          description: OK
+        302:
+          description: "OK, redirects to dataset"
+  /download:
+    post:
+      tags:
+      - "query"
+      summary: "Download a dataset from a search result and optional input data"
+      operationId: "download"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                data:
+                  type: string
+                  description: "Data which you want to augment"
+                  format: binary
+                task:
+                  $ref: "#/components/schemas/Result"
+              required:
+              - task
+            encoding:
+              task:
+                contentType: application/json
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Result"
+      responses:
+        404:
+          description: "No dataset for this result"
+        200:
+          description: OK
+        400:
+          description: "Invalid query"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /augment:
+    post:
+      tags:
+      - "augment"
+      summary: "Augment an input dataset with a selected search result"
+      operationId: "augment"
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                data:
+                  type: string
+                  description: "Data which you want to augment"
+                  format: binary
+                task:
+                  $ref: "#/components/schemas/Result"
+              required:
+              - task
+            encoding:
+              task:
+                contentType: application/json
+      responses:
+        200:
+          description: OK
+        400:
+          description: "Invalid request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Query:
+      description: "Search query"
+    Error:
+      description: "JSON object returned by API on client errors"
+    Results:
+      description: "Array of results returned by /search"
+    Result:
+      description: "Search result returned by /search"
