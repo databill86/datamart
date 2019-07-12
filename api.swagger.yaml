@@ -156,6 +156,10 @@ paths:
         examples:
           nyc_data:
             value: "datamart.socrata.data-cityofnewyork-us.395v-hkhg"
+      - in: query
+        name: "format"
+        schema:
+          enum: ["csv", "d3m"]
       responses:
         404:
           description: "No dataset with this ID"
@@ -169,6 +173,11 @@ paths:
       - "query"
       summary: "Download a dataset from a search result and optional input data"
       operationId: "download"
+      parameters:
+      - in: query
+        name: "format"
+        schema:
+          enum: ["csv", "d3m"]
       requestBody:
         content:
           multipart/form-data:
