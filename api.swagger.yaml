@@ -192,8 +192,7 @@ paths:
 components:
   schemas:
     Query:
-      description: "Search query"
-      type: object
+      $ref: "query_input_schema.json"
     Error:
       description: "JSON object returned by API on client errors"
       properties:
@@ -206,5 +205,4 @@ components:
       items:
         $ref: "#/components/schemas/Result"
     Result:
-      description: "Search result returned by /search"
-      type: object
+      $ref: "query_result_schema.json"
