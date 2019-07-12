@@ -193,9 +193,18 @@ components:
   schemas:
     Query:
       description: "Search query"
+      type: object
     Error:
       description: "JSON object returned by API on client errors"
+      properties:
+        error:
+          type: string
+          description: "The error message"
     Results:
       description: "Array of results returned by /search"
+      type: array
+      items:
+        $ref: "#/components/schemas/Result"
     Result:
       description: "Search result returned by /search"
+      type: object
