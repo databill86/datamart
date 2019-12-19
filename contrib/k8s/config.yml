@@ -8,4 +8,5 @@ metadata:
 data:
   elasticsearch.cluster_name: "docker-cluster"
   elasticsearch.heap_size: "4g"
-  query_host: https://nyu-datamart-nyu-api.datadrivendiscovery.org
+  #query_host: https://nyu-datamart-nyu-api.datadrivendiscovery.org
+  query_host: http://10.108.24.16:8002
