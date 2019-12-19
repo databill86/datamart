@@ -164,7 +164,7 @@ spec:
     spec:
       containers:
       - name: web
-        image: registry.gitlab.com/vida-nyu/datamart/datamart/query:v0.5.1-167-gd621122
+        image: registry.gitlab.com/vida-nyu/datamart/datamart/query:v0.5.1-168-g4120771
         imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS
