@@ -103,7 +103,7 @@ spec:
     spec:
       containers:
       - name: web
-        image: registry.gitlab.com/vida-nyu/datamart/datamart/coordinator:v0.5.1-166-g714aaf7
+        image: registry.gitlab.com/vida-nyu/datamart/datamart/coordinator:v0.5.1-180-g80fe3b9
         imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS
@@ -164,7 +164,7 @@ spec:
     spec:
       containers:
       - name: web
-        image: registry.gitlab.com/vida-nyu/datamart/datamart/query:v0.5.1-168-g4120771
+        image: registry.gitlab.com/vida-nyu/datamart/datamart/query:v0.5.1-180-g80fe3b9
         imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS
@@ -229,7 +229,7 @@ spec:
     spec:
       containers:
       - name: web
-        image: registry.gitlab.com/vida-nyu/datamart/datamart/profiler:v0.5.1-166-g714aaf7
+        image: registry.gitlab.com/vida-nyu/datamart/datamart/profiler:v0.5.1-180-g80fe3b9
         imagePullPolicy: IfNotPresent
         env:
         - name: ELASTICSEARCH_HOSTS
