@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 BUF_SIZE = 128000
 PAGINATION_SIZE = 200
-TOP_K_SIZE = 50
+TOP_K_SIZE = 150
 
 
 def compute_levenshtein_sim(str1, str2):
@@ -1183,7 +1183,7 @@ def get_augmentation_search_results(es, lazo_client, data_profile,
         result['supplied_id'] = None
         result['supplied_resource_id'] = None
 
-    return results[:50]  # top-50
+    return results[:TOP_K_SIZE]  # top-50
 
 
 class ProfilePostedData(tornado.web.RequestHandler):
