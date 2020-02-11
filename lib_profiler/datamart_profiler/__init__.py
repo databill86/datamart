@@ -32,7 +32,7 @@ SAMPLE_ROWS = 20
 BUCKETS = [0.5, 1.0, 5.0, 10.0, 20.0, 30.0, 60.0, 120.0, 300.0, 600.0]
 
 try:
-    import prometheus_client
+    import prometheus_client___
 except ImportError:
     logger.info("prometheus_client not installed, metrics won't be reported")
 
