@@ -61,6 +61,9 @@ class ExcelConverter(object):
         fp = open(temp_file, mode, **kwargs)
         return _ExcelProxy(self.writer, name, temp_file, fp)
 
+    def set_metadata(self, dataset_id, metadata):
+        self.writer.set_metadata(dataset_id, metadata)
+
     def finish(self):
         self.dir.cleanup()
         self.dir = None
