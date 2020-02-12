@@ -9,7 +9,7 @@ import time
 import tornado.web
 
 from datamart_core import types
-from datamart_core.fscache import cache_get_or_set
+from datamart_core.objectstore import get_object_store
 from datamart_profiler import process_dataset
 
 
@@ -1205,25 +1205,24 @@ class ProfilePostedData(tornado.web.RequestHandler):
         sha1 = hashlib.sha1(data)
         data_hash = sha1.hexdigest()
 
-        data_profile = [None]
+        object_store = get_object_store()
 
-        def create(cache_temp):
+        try:
+            with object_store.open('cached-profiles', data_hash) as fp:
+                data_profile = fp.read()
+        except FileNotFoundError:
             logger.info("Profiling...")
             start = time.perf_counter()
-            data_profile[0] = process_dataset(
+            data_profile = process_dataset(
                 data=io.BytesIO(data),
                 lazo_client=self.application.lazo_client,
-                search=True,
+                search=True
             )
             logger.info("Profiled in %.2fs", time.perf_counter() - start)
-            with open(cache_temp, 'wb') as fp:
-                pickle.dump(data_profile[0], fp)
+            with object_store.open('cached-profiles', data_hash, 'wb') as fp:
+                pickle.dump(data_profile, fp)
+        else:
+            logger.info("Found cached profile_data")
+            data_profile = pickle.loads(data_profile)
 
-        with cache_get_or_set('/cache/queries', data_hash, create) as cache_path:
-            if data_profile[0]:
-                # We just profiled it, no need to re-read from disk
-                return data_profile[0], data_hash
-            else:
-                logger.info("Found cached profile_data")
-                with open(cache_path, 'rb') as fp:
-                    return pickle.load(fp), data_hash
+        return data_profile, data_hash
