@@ -1,4 +1,5 @@
 from base64 import b64decode
+import contextlib
 import json
 import logging
 import os
@@ -39,7 +40,13 @@ class ObjectStore(object):
         return '%s%s' % (self.prefix, name)
 
     def open(self, bucket, name, mode='rb'):
-        return self.fs.open('%s/%s' % (self.bucket(bucket), name), mode)
+        full_name = '%s/%s' % (self.bucket(bucket), name)
+        if 'w' in mode:
+            # Manually commit if __exit__ without error
+            fp = self.fs.open(full_name, mode, autocommit=False)
+            return _commit_discard_context(fp)
+        else:
+            return self.fs.open(full_name, mode)
 
     def delete(self, bucket, name):
         self.fs.rm(
@@ -89,6 +96,17 @@ class ObjectStore(object):
 
     def file_url(self, fileobj):
         return self._build_client_url(fileobj.url())
+
+
+@contextlib.contextmanager
+def _commit_discard_context(fp):
+    try:
+        yield fp
+    except:
+        fp.discard()
+        raise
+    else:
+        fp.commit()
 
 
 class GCSObjectStore(ObjectStore):
