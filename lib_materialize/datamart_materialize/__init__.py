@@ -120,6 +120,32 @@ def get_writer(format):
     return writers[format]
 
 
+class _DontCloseWrapper(object):
+    def __init__(self, fileobj):
+        self._fileobj = fileobj
+        self.closed = False
+
+    def write(self, buf):
+        if self.closed:
+            raise ValueError("Write on closed file")
+        return self._fileobj.write(buf)
+
+    def flush(self):
+        if self.closed:
+            raise ValueError("Flush on closed file")
+        self._fileobj.flush()
+
+    def close(self):
+        self.flush()
+        self.closed = True
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
 class CsvWriter(object):
     """Writer for a single CSV file.
     """
@@ -127,7 +153,7 @@ class CsvWriter(object):
 
     def __init__(self, destination, format_options=None):
         if hasattr(destination, 'write'):
-            self.destination = destination
+            self.destination = _DontCloseWrapper(destination)
         else:
             self.destination = fsspec.open(destination, 'wb')
 
